@@ -1,10 +1,6 @@
 <resources>
     <string name="app_name">SimpleTimer</string>
-
-    <string name="timer_default_state">STOPPED</string>
-    <string name="timer_started_state">STARTED</string>
     <string name="timer_start">Start</string>
     <string name="timer_stop">Stop</string>
-
     <string name="timer_init">00:00:00</string>
 </resources>

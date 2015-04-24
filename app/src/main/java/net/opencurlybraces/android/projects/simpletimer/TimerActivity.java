@@ -59,7 +59,7 @@ public class TimerActivity extends Activity {
     private Button mStartStopController;
 
     private View mControlsView;
-    private TextView mContentView;
+    private View mFullScreenView;
     private Chronometer mChronometer;
 
     @Override
@@ -69,11 +69,11 @@ public class TimerActivity extends Activity {
         setContentView(R.layout.activity_timer);
 
         mControlsView = findViewById(R.id.fullscreen_content_controls);
-        mContentView = (TextView) findViewById(R.id.fullscreen_content);
+        mFullScreenView = findViewById(R.id.fullscreen_view);
         mChronometer = (Chronometer) findViewById(R.id.chrono);
         // Set up an instance of SystemUiHider to control the system UI for
         // this activity.
-        mSystemUiHider = SystemUiHider.getInstance(this, mContentView, HIDER_FLAGS);
+        mSystemUiHider = SystemUiHider.getInstance(this, mFullScreenView, HIDER_FLAGS);
         mSystemUiHider.setup();
         mSystemUiHider
                 .setOnVisibilityChangeListener(new SystemUiHider.OnVisibilityChangeListener() {
@@ -114,7 +114,7 @@ public class TimerActivity extends Activity {
                 });
 
         // Set up the user interaction to manually show or hide the system UI.
-        mContentView.setOnClickListener(new View.OnClickListener() {
+        mFullScreenView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (TOGGLE_ON_CLICK) {
@@ -162,19 +162,20 @@ public class TimerActivity extends Activity {
     View.OnClickListener mStartStopClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+
             if (mStarted) {
                 mStarted = false;
-                mContentView.setText(getString(R.string.timer_default_state));
                 mStartStopController.setText(getString(R.string.timer_start));
                 mChronometer.stop();
-                mTimeWhenStopped = (SystemClock.elapsedRealtime() - mChronometer.getBase());
+                mTimeWhenStopped = (SystemClock.elapsedRealtime()  - mChronometer
+                        .getBase());
 
 
             } else {
                 mStarted = true;
-                mChronometer.setBase(SystemClock.elapsedRealtime() - mTimeWhenStopped);
+                mChronometer.setBase(SystemClock.elapsedRealtime() -
+                        mTimeWhenStopped);
                 mChronometer.start();
-                mContentView.setText(getString(R.string.timer_started_state));
                 mStartStopController.setText(getString(R.string.timer_stop));
 
             }
