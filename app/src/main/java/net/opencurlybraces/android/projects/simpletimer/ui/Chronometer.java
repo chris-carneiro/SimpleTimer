@@ -22,9 +22,7 @@ import java.util.Locale;
 
 /**
  * This class is based on the {@link android.widget.Chronometer}. It was created to display the
- * milliseconds.
- * <BR/>
- * Created by chris on 23/04/15.
+ * milliseconds. <BR/> Created by chris on 23/04/15.
  */
 public class Chronometer extends TextView {
     private static final String TAG = "Chronometer";
@@ -43,6 +41,7 @@ public class Chronometer extends TextView {
 
     private long mBase;
     private boolean mVisible;
+    private boolean mPaused;
     private boolean mStarted;
     private boolean mRunning;
     private boolean mLogged;
@@ -61,6 +60,10 @@ public class Chronometer extends TextView {
     private static final long MILLISEC = 1;
 
     private static final int TICK_WHAT = 2;
+
+    private static final int FLICKER_WHAT = 3;
+
+    private static final int FLICKER_RATE = 500;
 
     /**
      * Initialize this Chronometer object. Sets the base to the current time.
@@ -165,7 +168,9 @@ public class Chronometer extends TextView {
      */
     public void start() {
         mStarted = true;
+        mPaused = false;
         updateRunning();
+        updateFlickering();
     }
 
     /**
@@ -177,7 +182,9 @@ public class Chronometer extends TextView {
      */
     public void stop() {
         mStarted = false;
+        mPaused = true;
         updateRunning();
+        updateFlickering();
     }
 
     /**
@@ -246,12 +253,36 @@ public class Chronometer extends TextView {
         }
     }
 
+
+    private void updateFlickering() {
+            if (mPaused) {
+                mHandlerFlicker.sendMessageDelayed(Message.obtain(mHandlerFlicker, FLICKER_WHAT),
+                        FLICKER_RATE);
+                setVisibility(getVisibility() == VISIBLE ? INVISIBLE : VISIBLE);
+            } else {
+                mHandlerFlicker.removeMessages(FLICKER_WHAT);
+                setVisibility(VISIBLE );
+            }
+
+
+
+    }
+
     private Handler mHandler = new Handler() {
         public void handleMessage(Message m) {
             if (mRunning) {
                 updateText(SystemClock.elapsedRealtime());
                 dispatchChronometerTick();
                 sendMessageDelayed(Message.obtain(this, TICK_WHAT), MILLISEC);
+            }
+        }
+    };
+
+    private Handler mHandlerFlicker = new Handler() {
+        public void handleMessage(Message m) {
+            if (mPaused) {
+                setVisibility(getVisibility() == VISIBLE ? INVISIBLE : VISIBLE);
+                sendMessageDelayed(Message.obtain(this, FLICKER_WHAT), FLICKER_RATE);
             }
         }
     };
