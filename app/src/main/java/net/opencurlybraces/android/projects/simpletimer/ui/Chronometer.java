@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import net.opencurlybraces.android.projects.simpletimer.util.TimeUtils;
 
+import java.lang.ref.WeakReference;
 import java.util.Formatter;
 import java.util.IllegalFormatException;
 import java.util.Locale;
@@ -39,6 +40,7 @@ public class Chronometer extends TextView {
 
     }
 
+    private DisplayHandler mHandler;
     private long mBase;
     private boolean mVisible;
     private boolean mPaused;
@@ -97,6 +99,7 @@ public class Chronometer extends TextView {
     }
 
     private void init() {
+        mHandler = new DisplayHandler(this);
         mBase = SystemClock.elapsedRealtime();
         updateText(mBase);
     }
@@ -255,37 +258,45 @@ public class Chronometer extends TextView {
 
 
     private void updateFlickering() {
-            if (mPaused) {
-                mHandlerFlicker.sendMessageDelayed(Message.obtain(mHandlerFlicker, FLICKER_WHAT),
-                        FLICKER_RATE);
-                setVisibility(getVisibility() == VISIBLE ? INVISIBLE : VISIBLE);
-            } else {
-                mHandlerFlicker.removeMessages(FLICKER_WHAT);
-                setVisibility(VISIBLE );
-            }
-
-
-
+        if (mPaused) {
+            mHandler.sendMessageDelayed(Message.obtain(mHandler, FLICKER_WHAT),
+                    FLICKER_RATE);
+            setVisibility(getVisibility() == VISIBLE ? INVISIBLE : VISIBLE);
+        } else {
+            mHandler.removeMessages(FLICKER_WHAT);
+            setVisibility(VISIBLE);
+        }
     }
 
-    private Handler mHandler = new Handler() {
-        public void handleMessage(Message m) {
-            if (mRunning) {
-                updateText(SystemClock.elapsedRealtime());
-                dispatchChronometerTick();
-                sendMessageDelayed(Message.obtain(this, TICK_WHAT), MILLISEC);
-            }
-        }
-    };
 
-    private Handler mHandlerFlicker = new Handler() {
-        public void handleMessage(Message m) {
-            if (mPaused) {
-                setVisibility(getVisibility() == VISIBLE ? INVISIBLE : VISIBLE);
-                sendMessageDelayed(Message.obtain(this, FLICKER_WHAT), FLICKER_RATE);
+    /**
+     * Created to prevent a possible leak of the View...
+     */
+    private static class DisplayHandler extends Handler {
+        private final WeakReference<Chronometer> mChronometer;
+
+        private DisplayHandler(Chronometer chrono) {
+            this.mChronometer = new WeakReference<>(chrono);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Chronometer chronoView = (mChronometer != null ? mChronometer.get() : null);
+            if (chronoView != null) {
+                if (chronoView.mRunning) {
+                    chronoView.updateText(SystemClock.elapsedRealtime());
+                    chronoView.dispatchChronometerTick();
+                    sendMessageDelayed(Message.obtain(this, TICK_WHAT), MILLISEC);
+                }
+
+                if (chronoView.mPaused) {
+                    chronoView.setVisibility(chronoView.getVisibility() == VISIBLE ? INVISIBLE :
+                            VISIBLE);
+                    sendMessageDelayed(Message.obtain(this, FLICKER_WHAT), FLICKER_RATE);
+                }
             }
         }
-    };
+    }
 
     void dispatchChronometerTick() {
         if (mOnChronometerTickListener != null) {
