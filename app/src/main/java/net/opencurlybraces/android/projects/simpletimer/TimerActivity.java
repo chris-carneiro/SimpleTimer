@@ -9,12 +9,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-
-import android.widget.TextView;
 
 
 /**
@@ -49,7 +46,7 @@ public class TimerActivity extends Activity {
      */
     private static final int HIDER_FLAGS = SystemUiHider.FLAG_HIDE_NAVIGATION;
 
-    private boolean mStarted = false;
+    private boolean mChronometerStarted = false;
 
     /**
      * The instance of the {@link SystemUiHider} for this activity.
@@ -61,6 +58,7 @@ public class TimerActivity extends Activity {
     private View mControlsView;
     private View mFullScreenView;
     private Chronometer mChronometer;
+    private long mTimeWhenStopped = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -158,26 +156,22 @@ public class TimerActivity extends Activity {
             return false;
         }
     };
-    private long mTimeWhenStopped = 0;
+
     View.OnClickListener mStartStopClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
 
-            if (mStarted) {
-                mStarted = false;
-                mStartStopController.setText(getString(R.string.timer_start));
+            if (mChronometerStarted) { // Stop case
+                setChronometerStarted(false);
+                setChronometerControllerText(getString(R.string.timer_start));
                 mChronometer.stop();
-                mTimeWhenStopped = (SystemClock.elapsedRealtime()  - mChronometer
-                        .getBase());
+                saveStoppedTime(SystemClock.elapsedRealtime() - mChronometer.getBase());
 
-
-            } else {
-                mStarted = true;
-                mChronometer.setBase(SystemClock.elapsedRealtime() -
-                        mTimeWhenStopped);
+            } else {  // Start case
+                setChronometerStarted(true);
+                setChronometerControllerText(getString(R.string.timer_stop));
+                setChronometerReferenceTime(SystemClock.elapsedRealtime() - mTimeWhenStopped);
                 mChronometer.start();
-                mStartStopController.setText(getString(R.string.timer_stop));
-
             }
         }
     };
@@ -197,5 +191,32 @@ public class TimerActivity extends Activity {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+
+    private void setChronometerStarted(boolean started) {
+        this.mChronometerStarted = started;
+    }
+
+    /**
+     * Sets the value to be displayed by the chronometer start/stop controller
+     *
+     * @param value to display
+     */
+    private void setChronometerControllerText(String value) {
+        mStartStopController.setText(value);
+    }
+
+    private void saveStoppedTime(long timeWhenStopped) {
+        this.mTimeWhenStopped = timeWhenStopped;
+    }
+
+    /**
+     * reset the chronometer reference time to be able to resume it from the stopped time.
+     *
+     * @param referenceTime
+     */
+    private void setChronometerReferenceTime(long referenceTime) {
+        mChronometer.setBase(referenceTime);
     }
 }
